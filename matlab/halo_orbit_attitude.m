@@ -17,9 +17,9 @@ TU = 382981; % s, inverse of the relative angular frequency between the
 % two primary attractors
 
 % Using the same inertia tensor as in the paper from Calaon and Schaub 2022
-inertia = [6.67 0 0;
-           0 41.87 0;
-           0 0 41.87]*1e-3;
+inertia = [6.67 0     0;
+           0    41.87 0;
+           0    0     41.87] * 1e-3;
 
 % Assuming no disturbances for now
 torques = [0 0 0];
@@ -27,9 +27,9 @@ torques = [0 0 0];
 %% Computing intial conditions for the Halo orbit
 % Initial guess using https://ssd.jpl.nasa.gov/tools/periodic_orbits.html
 
-x0 = 1.0836947694764694;
-y0 = 0.0;
-z0 = 0.06378527023677243;
+x0  = 1.0836947694764694;
+y0  = 0.0;
+z0  = 0.06378527023677243;
 vx0 = 0.0;
 vy0 = 0.2783751354704641;
 vz0 = 0.0;
@@ -51,20 +51,20 @@ initial_conditions_quat = [initial_position; initial_velocity;
 
 period = 3.315677359772673;
 t_sim = [0 period]; % plotting for just one orbit
-[t_orbit,y_orbit] = ode113(@(t,y) halo_propagator_quaternion(t,y,mu, ...
+[t_orbit, y_orbit] = ode113(@(t, y) halo_propagator_quaternion(t, y, mu, ...
     inertia, torques), t_sim, initial_conditions_quat);
 
 %% Plot of the initial guess for the position of the center of mass
 figure(1)
-plot3(y_orbit(:,1)*r12*1e-3-(1-mu)*r12*1e-3,y_orbit(:,2)*r12*1e-3, ...
-    y_orbit(:,3)*r12*1e-3)
+plot3(y_orbit(:, 1) * r12 * 1e-3 - (1 - mu) * r12 * 1e-3, y_orbit(:, 2) * r12 * 1e-3, ...
+    y_orbit(:, 3) * r12 * 1e-3)
 % Add the Earth and the Moon in the visualization
 % hold on
 % plot3(-mu*r12*1e-3, 0, 0,'ro')
 hold on
 plot3(0, 0, 0, 'bo')
 hold on
-plot3(L2x*r12*1e-3-(1-mu)*r12*1e-3, 0, 0, 'go')
+plot3(L2x * r12 * 1e-3 - (1 - mu) * r12 * 1e-3, 0, 0, 'go')
 axis equal
 grid on
 xlabel('X axis [nd]')
@@ -76,23 +76,23 @@ hold off
 %% Optimization using the single-shooting differenciation correction
 adjusted_conditions = [initial_position; initial_velocity; initial_STM; 
                        mu];
-tf = period/2;
+tf = period / 2;
 tol = 1e-5;
 
 for i=1:1000
     i
 %     adjusted_conditions
-    [t_temp,y_temp] = ode113(@halo_propagator_point_mass_with_STM, ...
+    [t_temp, y_temp] = ode113(@halo_propagator_point_mass_with_STM, ...
         [0 tf], adjusted_conditions);
-    f = [y_temp(end,2) y_temp(end,4) y_temp(end,6)]';
+    f = [y_temp(end, 2) y_temp(end, 4) y_temp(end, 6)]';
     norm(f)
     if norm(f)<tol
-        adjusted_conditions(1) = y_temp(1,1);
-        adjusted_conditions(5) = y_temp(1,5);
+        adjusted_conditions(1) = y_temp(1, 1);
+        adjusted_conditions(5) = y_temp(1, 5);
         break
     else
         state_end = halo_propagator_point_mass_with_STM(t_temp(end), ...
-            y_temp(end,:));
+            y_temp(end, :));
         % Computing the Jacobian
         df = [state_end(13) state_end(17) state_end(2);
               state_end(25) state_end(29) state_end(4);
@@ -106,24 +106,24 @@ for i=1:1000
 end
 
 % new period is 2*tf and changed only the x position and y velocity
-initial_conditions_MRP(1) = adjusted_conditions(1);
-initial_conditions_MRP(5) = adjusted_conditions(5);
+initial_conditions_MRP(1)  = adjusted_conditions(1);
+initial_conditions_MRP(5)  = adjusted_conditions(5);
 initial_conditions_quat(1) = adjusted_conditions(1);
 initial_conditions_quat(5) = adjusted_conditions(5);
 
 %% Plotting the Halo orbit with the adjusted initial conditions
-[t_orbit,y_orbit] = ode113(@(t,y) halo_propagator_quaternion(t,y,mu, ...
-    inertia, torques), [0 4*tf], initial_conditions_quat);
+[t_orbit,y_orbit] = ode113(@(t,y) halo_propagator_quaternion(t, y, mu, ...
+    inertia, torques), [0 4 * tf], initial_conditions_quat);
 
 figure(2)
-plot3(y_orbit(:,1)-(1-mu), y_orbit(:,2), y_orbit(:,3))
+plot3(y_orbit(:, 1) - (1 - mu), y_orbit(:, 2), y_orbit(:, 3))
 % Add the Earth and the Moon in the visualization
 % hold on
 % plot3(-mu*r12*1e-3, 0, 0,'ro')
 hold on
 plot3(0, 0, 0, 'bo')
 hold on
-plot3(L2x-(1-mu), 0, 0, 'go')
+plot3(L2x - (1 - mu), 0, 0, 'go')
 axis equal
 grid on
 xlabel('X axis [nd]')
@@ -134,7 +134,7 @@ hold off
 
 %% Position and attitude propagation functions
 
-function statedot = halo_propagator_MRP(t,state,mu,I,T)
+function statedot = halo_propagator_MRP(t, state, mu, I, T)
 % Computing the derivative of the state vector
 
 % Inputs
@@ -152,42 +152,42 @@ function statedot = halo_propagator_MRP(t,state,mu,I,T)
 % statedot - derivative of the state vector at time t given the state
 % vector
 
-    x = state(1);
-    y = state(2);
-    z = state(3);
+    x  = state(1);
+    y  = state(2);
+    z  = state(3);
     vx = state(4);
     vy = state(5);
 %     mu = state(7);
-    rB1 = sqrt((x+mu)^2 + y^2 + z^2); % distance to primary attractor
-    rB2 = sqrt((x-1+mu)^2 + y^2 + z^2); % distance to secondary attractor
-    omega = [state(7) state(8) state(9)]'; % angular velocity
+    rB1 = sqrt((x     + mu)^2 + y^2 + z^2); % distance to primary attractor
+    rB2 = sqrt((x - 1 + mu)^2 + y^2 + z^2); % distance to secondary attractor
+    omega = [state(7)  state(8)  state(9)]'; % angular velocity
     sigma = [state(10) state(11) state(12)]; % MRP
 
-    if norm(sigma)>1 % want to work with the MRP within the unitary ball
-        sigma = -sigma/norm(sigma)^2;
+    if norm(sigma) > 1 % want to work with the MRP within the unitary ball
+        sigma = - sigma / norm(sigma)^2;
     end
 
-    statedot = zeros(12,1); % 7
+    statedot = zeros(12, 1); % 7
     statedot(1:3) = state(4:6);
-    statedot(4) = x + 2*vy - (1-mu)*(x+mu)/(rB1^3) - mu*(x-1+mu)/(rB2^3);
-    statedot(5) = y - 2*vx - (1-mu)*y/(rB1^3) - mu*y/(rB2^3);
-    statedot(6) = -(1-mu)*z/(rB1^3) - mu*z/(rB2^3);
+    statedot(4) = x + 2 * vy - (1 - mu) * (x + mu) / (rB1^3) - mu * (x - 1 + mu) / (rB2^3);
+    statedot(5) = y - 2 * vx - (1 - mu) * y / (rB1^3) - mu * y / (rB2^3);
+    statedot(6) = - (1 - mu) * z / (rB1^3) - mu * z / (rB2^3);
     
     % Derivative of the angular velocity using Euler equations
-    statedot(7) = (T(1) + (I(2,2) - I(3,3))*omega(2)*omega(3))/I(1,1);
-    statedot(8) = (T(2) + (I(3,3) - I(1,1))*omega(1)*omega(3))/I(2,2);
-    statedot(9) = (T(3) + (I(1,1) - I(2,2))*omega(1)*omega(2))/I(3,3);
+    statedot(7) = (T(1) + (I(2, 2) - I(3, 3)) * omega(2) * omega(3)) / I(1,1);
+    statedot(8) = (T(2) + (I(3, 3) - I(1, 1)) * omega(1) * omega(3)) / I(2,2);
+    statedot(9) = (T(3) + (I(1, 1) - I(2, 2)) * omega(1) * omega(2)) / I(3,3);
 
     % Derivative of the MRP using the paper by Calaon and Schaub from 2022
-    scross = [0 -sigma(3) sigma(2);
-              sigma(3) 0 -sigma(1);
-              -sigma(2) sigma(1) 0];
-    B = (1 - norm(sigma)^2)*eye(3) + 2*scross + 2*sigma*sigma';
-    statedot(10:12) = (1/4)*B*omega;
+    scross = [0         - sigma(3)  sigma(2);
+               sigma(3)  0          - sigma(1);
+              - sigma(2) sigma(1)   0];
+    B = (1 - norm(sigma)^2) * eye(3) + 2 * scross + 2 * sigma * sigma';
+    statedot(10:12) = (1 / 4) * B * omega;
     
 end
 
-function statedot = halo_propagator_quaternion(t,state,mu,I,T)
+function statedot = halo_propagator_quaternion(t, state, mu, I, T)
 % Computing the derivative of the state vector
 
 % Inputs
